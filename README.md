@@ -1,98 +1,102 @@
-# vinext-starter
+# TinyShift
 
-A clean full-stack starter running on
-[vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and
-Drizzle support.
+A habit-coaching prototype. Instead of asking you to rebuild your routine, it maps the
+day you already have, finds the moments that reliably repeat, and attaches three small
+food and movement changes to them.
+
+Built on [vinext](https://github.com/cloudflare/vinext) (Vite + React Server Components,
+deployed as a Cloudflare Worker) and hosted as a ChatGPT Site.
 
 ## Prerequisites
 
-- Node.js `>=22.13.0`
+- Node.js `>=22.13.0` (the unit tests import TypeScript directly, which needs `>=22.18`)
 
 ## Quick Start
 
 ```bash
 npm install
 npm run dev
-npm run build
 ```
 
-This starter does not use `wrangler.jsonc`.
+## The idea
 
-## Included Shape
+Three concepts carry the whole app:
 
-- edit site code under `app/`
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/schema.ts` starts intentionally empty
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
+- **Anchors** — moments that already happen most days (morning tea, lunch, reaching home).
+  A new habit attached to an existing anchor needs no new time slot and no willpower.
+- **Tiny Shifts** — one food change, one movement change, and one environment change that
+  makes the other two easier. Each has a *normal* version and a deliberately small
+  *minimum* version, so a bad day still has a version you can do.
+- **Barriers** — when you skip a shift, the app asks why. A miss is treated as data about
+  the plan, not a failure of the person, and the weekly review uses it to suggest moving a
+  habit to a steadier anchor.
 
-## Workspace Auth Headers
+## How it fits together
 
-Signed-in visitors receive both `oai-authenticated-user-id` and `oai-authenticated-user-email`. Private Sites require every visitor to sign in; public Sites may also have anonymous visitors, for whom neither header is present.
+| Path | Role |
+| --- | --- |
+| [`app/page.tsx`](app/page.tsx) | The entire UI. Six views (landing, onboarding, routine map, plan, dashboard, weekly review) switched by local state. |
+| [`lib/engine.ts`](lib/engine.ts) | All the logic: builds the anchor timeline, generates the shifts, and aggregates the habit log into weekly stats and a review. Pure functions, no React. |
+| [`lib/types.ts`](lib/types.ts) | The domain model — onboarding answers, shifts, and the habit log. |
+| [`app/globals.css`](app/globals.css) | Hand-written CSS for the whole app. |
+| [`worker/index.ts`](worker/index.ts) | Cloudflare Worker entry point, from the starter. Handles image optimization, then defers to vinext. |
 
-The user ID is stable for the same user on the same Site and different across Sites. Email and name are intended for display or contact purposes.
+### State
 
-SIWC-authenticated workspace sites may also receive
-`oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty
-`name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by
-`oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
+Everything lives in `localStorage` under the key `tinyshift-v2`; there is no backend and no
+account. The stored shape is `{ data, log }`, where `log` is keyed by local calendar day:
 
-Treat the full name as optional and fall back to email when it is absent:
-
-```tsx
-import { headers } from "next/headers";
-
-export default async function Home() {
-  const requestHeaders = await headers();
-  const userId = requestHeaders.get("oai-authenticated-user-id");
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
-
-  const displayName = fullName ?? email;
-  // ...
-}
+```ts
+log["2026-08-12"]["move"] = { date: "2026-08-12", status: "missed", barrier: "tired" }
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+Two consequences worth knowing. Completions are per-day, so today always starts empty and a
+session left open past midnight rolls over on its own. And because stored JSON can come from
+an older build or be edited by hand, `readStore` in [`app/page.tsx`](app/page.tsx) validates
+it and falls back to a blank profile rather than trusting it.
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs
-optional or required ChatGPT sign-in:
+Shifts are *templates* generated fresh from the onboarding answers; the log is the only
+state. Nothing is written back onto a shift.
 
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send
-  anonymous visitors through Sign in with ChatGPT.
-- Use `chatGPTSignInPath(returnTo)` and `chatGPTSignOutPath(returnTo)` for
-  browser links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in
-  or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because
-  they depend on per-request identity headers.
+### The database is not wired up
 
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the
-OAuth cookies, and identity header injection. Do not implement app routes for
-those reserved paths. Routes that do not import and call the helper remain
-anonymous-compatible.
+[`db/schema.ts`](db/schema.ts) is intentionally empty and `.openai/hosting.json` declares no
+D1 binding. The Drizzle scaffolding from the starter is still present for whenever this
+needs real accounts, and [`examples/d1/`](examples/d1/) shows the shape it would take.
 
-SIWC establishes identity only; it does not prove workspace membership. Use the
-Sites hosting platform's access policy controls for workspace-wide restrictions,
-or enforce explicit server-side membership or allowlist checks.
+### Sign-in, if it is ever needed
 
-Use SIWC for account pages, user-specific dashboards, saved records, and write
-actions tied to the current ChatGPT user. Leave public content anonymous.
+TinyShift is anonymous today. If it grows accounts, the helpers are already sitting in
+[`app/chatgpt-auth.ts`](app/chatgpt-auth.ts) — `getChatGPTUser()` for optional signed-in UI,
+`requireChatGPTUser(returnTo)` to send anonymous visitors through Sign in with ChatGPT, and
+`chatGPTSignInPath` / `chatGPTSignOutPath` for links. Pages that use them need
+`export const dynamic = "force-dynamic"`, since they depend on per-request identity headers.
 
-## Useful Commands
+Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the OAuth
+cookies, and header injection — don't implement app routes at those paths. Signing in proves
+identity, not workspace membership; use the hosting platform's access policy or an explicit
+server-side allowlist for that.
 
-- `npm run dev`: start local development
-- `npm run build`: verify the vinext build output
-- `npm test`: build the starter and verify its rendered loading skeleton
-- `npm run db:generate`: generate Drizzle migrations after schema changes
+## Commands
+
+- `npm run dev` — start local development
+- `npm run build` — verify the vinext build output
+- `npm run test:unit` — fast engine tests, no build required
+- `npm test` — engine tests, then a build, then check the server-rendered HTML
+- `npm run lint` — ESLint, including the React Hooks and jsx-a11y rules
+
+## Known rough edges
+
+- **The page is entirely a client component.** The server ships only a loading shell, so the
+  marketing landing page has no crawlable content. Splitting the landing view into a server
+  component would fix it.
+- **Navigation is local state.** There are no URLs for the individual views, so you cannot
+  deep-link to the dashboard and the browser Back button leaves the app.
+- **`npx tsc --noEmit` reports three errors** in `worker/index.ts` and `db/index.ts`
+  (`Fetcher`, `D1Database`, `cloudflare:workers`). These are starter files with no
+  ambient Workers types. Adding `@cloudflare/workers-types` conflicts with wrangler 4's
+  bundled types, and the supported alternative (`wrangler types`) needs a `wrangler.jsonc`
+  that this starter deliberately omits. The build is unaffected.
 
 ## Learn More
 
