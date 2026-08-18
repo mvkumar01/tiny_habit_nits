@@ -1,4 +1,4 @@
-# TinyShift
+# Habstick
 
 A habit-coaching prototype. Instead of asking you to rebuild your routine, it maps the
 day you already have, finds the moments that reliably repeat, and attaches three small
@@ -66,7 +66,7 @@ needs real accounts, and [`examples/d1/`](examples/d1/) shows the shape it would
 
 ### Sign-in, if it is ever needed
 
-TinyShift is anonymous today. If it grows accounts, the helpers are already sitting in
+Habstick is anonymous today. If it grows accounts, the helpers are already sitting in
 [`app/chatgpt-auth.ts`](app/chatgpt-auth.ts) — `getChatGPTUser()` for optional signed-in UI,
 `requireChatGPTUser(returnTo)` to send anonymous visitors through Sign in with ChatGPT, and
 `chatGPTSignInPath` / `chatGPTSignOutPath` for links. Pages that use them need

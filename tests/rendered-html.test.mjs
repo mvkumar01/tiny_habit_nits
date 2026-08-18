@@ -22,14 +22,14 @@ async function render() {
   );
 }
 
-test("the worker server-renders the TinyShift document", async () => {
+test("the worker server-renders the Habstick document", async () => {
   const response = await render();
   assert.equal(response.status, 200);
   assert.match(response.headers.get("content-type") ?? "", /^text\/html\b/i);
 
   const html = await response.text();
   assert.match(html, /<html lang="en">/);
-  assert.match(html, /<title>TinyShift — Healthy habits that fit your life<\/title>/i);
+  assert.match(html, /<title>Habstick — Healthy habits that fit your life<\/title>/i);
   assert.match(html, /<meta name="description" content="Map your real day/i);
   assert.match(html, /property="og:image" content="[^"]*\/og\.png"/i);
   assert.match(html, /rel="stylesheet"/, "the stylesheet must be linked or the page renders unstyled");

@@ -135,11 +135,11 @@ function Landing({ onStart, onDemo, onHome, savedName, onContinue }: { onStart: 
       <div className="hero-copy">
         <div className="eyebrow"><Icon name="spark" /> Small changes. Real life.</div>
         <h1>Healthy habits that<br/><em>fit your life.</em></h1>
-        <p className="hero-lede">Don’t rebuild your routine. Improve the one you already have. TinyShift learns how your day actually works, then finds food and movement changes easy enough to stick.</p>
+        <p className="hero-lede">Don’t rebuild your routine. Improve the one you already have. Habstick learns how your day actually works, then finds food and movement changes easy enough to stick.</p>
         <div className="hero-actions"><button className="button" onClick={onStart}>Map my routine <Icon name="arrow" /></button><button className="button ghost" onClick={() => document.getElementById("how")?.scrollIntoView({ behavior: "smooth" })}>See how it works</button></div>
         <div className="proof"><div className="avatars"><span>V</span><span>A</span><span>M</span></div><p><strong>Built around your day</strong><br/>No calories. No guilt. No overhaul.</p></div>
       </div>
-      <div className="routine-preview" aria-label="Example routine and TinyShift suggestion">
+      <div className="routine-preview" aria-label="Example routine and Habstick suggestion">
         <div className="preview-head"><span>Tuesday · your real day</span><span className="live-dot">Mapped</span></div>
         <div className="mini-timeline">
           {[['7:30','Wake'],['8:15','Tea'],['9:00','Work'],['1:30','Lunch'],['5:00','Tea'],['8:30','Dinner'],['11:30','Sleep']].map(([time,label], i) => <div className={`mini-row ${i === 4 ? "active" : ""}`} key={time}><time>{time}</time><span className="dot"/><b>{label}</b>{i === 4 && <span className="plus">+</span>}</div>)}
@@ -157,7 +157,7 @@ function Landing({ onStart, onDemo, onHome, savedName, onContinue }: { onStart: 
   </div>;
 }
 
-function Brand({ onHome }: { onHome: () => void }) { return <button className="brand" onClick={onHome} aria-label="TinyShift home"><span className="brand-mark"><Icon name="leaf" /></span>TinyShift</button>; }
+function Brand({ onHome }: { onHome: () => void }) { return <button className="brand" onClick={onHome} aria-label="Habstick home"><span className="brand-mark"><Icon name="leaf" /></span>Habstick</button>; }
 
 function AppNav({ view, go, name }: { view: View; go: (v: View) => void; name: string }) {
   return <header className="appbar"><Brand onHome={() => go("landing")} /><nav aria-label="Main navigation">
@@ -249,7 +249,7 @@ function RoutineMap({ data, shifts, onContinue, onHome }: { data: OnboardingData
 function Plan({ shifts, onContinue }: { shifts: TinyShift[]; onContinue: () => void }) {
   return <div className="page-shell plan-page"><div className="page-intro centered"><div><div className="eyebrow"><Icon name="spark" /> YOUR STARTING PLAN</div><h1>Just three shifts.<br/><em>Small on purpose.</em></h1><p>Try these for a week. We’ll learn from what fits—and adjust what doesn’t.</p></div></div>
     <div className="plan-grid">{shifts.map((s, i) => <ShiftDetail key={s.id} shift={s} number={i + 1}/>)}</div>
-    <div className="plan-pledge"><div className="pledge-icon"><Icon name="leaf" /></div><div><b>The TinyShift promise</b><p>Missing a habit is information, not failure. The plan should adapt to your life—not the other way around.</p></div><button className="button" onClick={onContinue}>Start my week <Icon name="arrow" /></button></div>
+    <div className="plan-pledge"><div className="pledge-icon"><Icon name="leaf" /></div><div><b>The Habstick promise</b><p>Missing a habit is information, not failure. The plan should adapt to your life—not the other way around.</p></div><button className="button" onClick={onContinue}>Start my week <Icon name="arrow" /></button></div>
   </div>;
 }
 
@@ -266,7 +266,7 @@ function Dashboard({ data, shifts, log, today, mark, onMiss, go }: { data: Onboa
   return <div className="dashboard page-shell"><section className="dash-hero"><div><div className="today-label">{formatDayLabel(today)}</div><h1>{greeting(new Date().getHours())}{name ? `, ${name}` : ""}.</h1><p>Today’s goal isn’t perfection. Just keep the pattern alive.</p></div><div className="day-progress"><div className="progress-ring" style={{ "--progress": `${(done / shifts.length) * 360}deg` } as React.CSSProperties}><span><b>{done}</b>/{shifts.length}</span></div><p><b>Tiny Shifts</b><br/>completed today</p></div></section>
     <div className="dashboard-layout"><section><div className="section-title"><div><span>TODAY’S PLAN</span><h2>Three chances to care for yourself.</h2></div></div><div className="habit-list">{shifts.map((s) => <HabitCard key={s.id} shift={s} status={statusFor(log, s.id, today)} onDone={() => mark(s.id, statusFor(log, s.id, today) === "done" ? undefined : "done")} onMiss={() => onMiss(s)} />)}</div></section>
       <aside className="dash-side"><article className="week-card"><div className="week-top"><div><span>THIS WEEK</span><strong>{week.done} <small>of {week.opportunities}</small></strong></div><div className="mini-ring" style={{ "--percent": `${percent}%` } as React.CSSProperties}>{percent}%</div></div><div className="week-bars">{week.days.map((d) => <div key={d.date}><span style={{ height: `${d.done ? 20 + (d.done / tallest) * 45 : 6}px` }} className={d.date === today ? "current" : ""}/><small>{d.letter}</small></div>)}</div><p>{week.done ? "You’re showing up more often than not. That’s how patterns grow." : "Nothing logged yet. Mark one shift done and this fills in."}</p><button onClick={() => go("review")}>View weekly review <Icon name="arrow" /></button></article>
-      <article className="thought-card"><div className="quote-mark">“</div><p>The best plan is the one that still works on an ordinary Tuesday.</p><span>A note from TinyShift</span></article></aside></div>
+      <article className="thought-card"><div className="quote-mark">“</div><p>The best plan is the one that still works on an ordinary Tuesday.</p><span>A note from Habstick</span></article></aside></div>
   </div>;
 }
 
